@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中央政府114年預算與113年法定預算媒體政策及業務宣導經費比較</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="json/data.js"></script>
+
+    <style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+h1, h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* 按鈕樣式 */
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+#toggleUnit {
+    background-color: #2ecc71;
+}
+
+#toggleUnit:hover {
+    background-color: #27ae60;
+}
+
+/* 表格樣式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+th:hover {
+    background-color: #2980b9;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #e0e0e0;
+}
+
+/* 極端值標記 */
+.extreme {
+    background-color: #fff9c4;
+    font-weight: bold;
+}
+
+/* 消息顯示 */
+#message {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+
+/* 圖表容器 */
+.chart-container {
+    background-color: white;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* 文件上傳區域 */
+#fileUpload {
+    margin-bottom: 20px;
+}
+
+/* 當前單位顯示 */
+#currentUnit {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    table {
+        font-size: 14px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+
+    button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+h1, h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* 按鈕樣式 */
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+#toggleUnit {
+    background-color: #2ecc71;
+}
+
+#toggleUnit:hover {
+    background-color: #27ae60;
+}
+
+/* 表格樣式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+th:hover {
+    background-color: #2980b9;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #e0e0e0;
+}
+
+/* 極端值標記 */
+.extreme {
+    background-color: #fff9c4;
+    font-weight: bold;
+}
+
+/* 消息顯示 */
+#message {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+}
+
+/* 圖表容器 */
+.chart-container {
+    background-color: white;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* 文件上傳區域 */
+#fileUpload {
+    margin-bottom: 20px;
+}
+
+/* 當前單位顯示 */
+#currentUnit {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    table {
+        font-size: 14px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+
+    button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+    </style>
+</head>
+<body>
+    <h1>中央政府114年預算與113年法定預算媒體政策及業務宣導經費比較</h1>
+    
+    <div class="file-upload-container">
+        <div class="file-upload-area" id="dropZone">
+            <i class="fas fa-file-excel file-icon"></i>
+            <p>拖放 Excel 文件到這裡或</p>
+            <label for="fileUpload" class="file-upload-button">選擇文件</label>
+            <input type="file" id="fileUpload" accept=".xlsx, .xls" hidden>
+        </div>
+        <div id="fileName"></div>
+        <div id="message"></div>
+    </div>
+        <h2>預算比較表</h2>
+        <button id="toggleUnit">切換單位</button>
+        <span id="currentUnit">當前單位：新臺幣千元</span>
+        <table id="budgetComparison"></table>
+    </div>
+    <div>
+        <h2>預算比較表</h2>
+        <table id="budgetComparison"></table>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="budgetGrowthChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="thisYearPieChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="lastYearPieChart"></canvas>
+    </div>
+
+    <button onclick="exportToCSV()">導出為 CSV</button>
+    <button onclick="exportToJSON()">導出為 JSON</button>
+
+    <script>
+        let globalData = [];
+let isThousandUnit = true; // 標記當前是否為千元單位
+
+// 輔助函數：解析可能帶有逗號的數字字符串
+function parseNumber(value) {
+    if (typeof value === 'string') {
+        // 移除所有逗號，然後轉換為數字
+        return Number(value.replace(/,/g, ''));
+    }
+    return Number(value);
+}
+
+// 處理文件上傳
+function handleFileUpload(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+
+            const thisYearSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const lastYearSheet = workbook.Sheets[workbook.SheetNames[1]];
+
+            // 使用 raw: true 選項來獲取原始的單元格值
+            const thisYearData = XLSX.utils.sheet_to_json(thisYearSheet, {header: ['name', 'budget'], raw: true});
+            const lastYearData = XLSX.utils.sheet_to_json(lastYearSheet, {header: ['name', 'budget'], raw: true});
+
+            if (thisYearData[0].name === '名稱' && thisYearData[0].budget === '預算') {
+                thisYearData.shift();
+            }
+            if (lastYearData[0].name === '名稱' && lastYearData[0].budget === '預算') {
+                lastYearData.shift();
+            }
+
+            console.log('Raw This Year Data (First 5 items):', thisYearData.slice(0, 5));
+            console.log('Raw Last Year Data (First 5 items):', lastYearData.slice(0, 5));
+
+            globalData = combineData(thisYearData, lastYearData);
+            
+            // 如果當前單位是元，則將數據轉換為千元
+            if (!isThousandUnit) {
+                globalData = globalData.map(item => ({
+                    ...item,
+                    thisYear: item.thisYear / 1000,
+                    lastYear: item.lastYear / 1000
+                }));
+            }
+
+            console.log('Combined Data (First 5 items):', globalData.slice(0, 5));
+
+            localStorage.setItem('budget_comparison', JSON.stringify(globalData));
+
+            displayBudgetComparison(globalData);
+            createBudgetGrowthChart(globalData);
+            createPieCharts(globalData);
+
+            document.getElementById('message').textContent = 'Excel 文件已成功上傳和解析。數據已存儲到本地存儲中。';
+        } catch (error) {
+            console.error('Error processing file:', error);
+            document.getElementById('message').textContent = '處理文件時發生錯誤。請確保文件格式正確。';
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+// 合併數據
+function combineData(thisYearData, lastYearData) {
+    const combinedData = [];
+    let totalThisYear = 0;
+    let totalLastYear = 0;
+    
+    const allUnits = new Set([...thisYearData.map(item => item.name), ...lastYearData.map(item => item.name)]);
+    
+    allUnits.forEach(unit => {
+        const thisYear = thisYearData.find(item => item.name === unit);
+        const lastYear = lastYearData.find(item => item.name === unit);
+        
+        const thisYearBudget = thisYear ? parseNumber(thisYear.budget) : 0;
+        const lastYearBudget = lastYear ? parseNumber(lastYear.budget) : 0;
+        
+        const growthRate = lastYearBudget !== 0 ? (thisYearBudget - lastYearBudget) / lastYearBudget * 100 : 0;
+
+        combinedData.push({
+            unit: unit,
+            thisYear: thisYearBudget,
+            lastYear: lastYearBudget,
+            growthRate: growthRate.toFixed(2),
+            isExtreme: unit === '臺灣文學館' || growthRate > 1000
+        });
+        
+        totalThisYear += thisYearBudget;
+        totalLastYear += lastYearBudget;
+    });
+
+    // 添加總和合計的資料作為第一列
+    combinedData.unshift({
+        unit: '總和',
+        thisYear: totalThisYear,
+        lastYear: totalLastYear,
+        growthRate: ((totalLastYear !== 0) ? ((totalThisYear - totalLastYear) / totalLastYear * 100) : 0).toFixed(2),
+        isExtreme: false
+    });
+
+    return combinedData;
+}
+
+// 切換單位
+function toggleUnit() {
+    isThousandUnit = !isThousandUnit;
+    const unitDisplay = document.getElementById('currentUnit');
+    unitDisplay.textContent = isThousandUnit ? '當前單位：新臺幣千元' : '當前單位：新臺幣元';
+    
+    // 更新全局數據
+    globalData = globalData.map(item => ({
+        ...item,
+        thisYear: isThousandUnit ? item.thisYear / 1000 : item.thisYear * 1000,
+        lastYear: isThousandUnit ? item.lastYear / 1000 : item.lastYear * 1000
+    }));
+
+    // 重新顯示數據
+    displayBudgetComparison(globalData);
+    createBudgetGrowthChart(globalData);
+    createPieCharts(globalData);
+}
+
+// 顯示預算比較表
+function displayBudgetComparison(data) {
+    const table = document.getElementById('budgetComparison');
+    table.innerHTML = `
+        <tr>
+            <th onclick="sortTable('unit')">單位</th>
+            <th onclick="sortTable('thisYear')">114年預算${isThousandUnit ? '(千元)' : '(元)'}</th>
+            <th onclick="sortTable('lastYear')">113年預算${isThousandUnit ? '(千元)' : '(元)'}</th>
+            <th onclick="sortTable('growthRate')">預算增幅 (%)</th>
+        </tr>
+    `;
+    data.forEach((item, index) => {
+        const row = table.insertRow();
+        row.insertCell(0).textContent = item.unit;
+        row.insertCell(1).textContent = item.thisYear.toLocaleString();
+        row.insertCell(2).textContent = item.lastYear.toLocaleString();
+        const growthCell = row.insertCell(3);
+        growthCell.textContent = item.growthRate + '%';
+
+        if (index === 0) {
+            row.style.fontWeight = 'bold';  // 強調總和列
+            row.style.backgroundColor = '#f0f0f0';  // 改變背景顏色
+        } else if (item.isExtreme) {
+            growthCell.classList.add('extreme');
+            growthCell.title = '極端值，在圖表中被排除';
+        }
+    });
+}
+
+// 創建預算增長圖表
+function createBudgetGrowthChart(data) {
+    const filteredData = data.filter(item => 
+        item.unit !== '臺灣文學館' && parseFloat(item.growthRate) <= 1000
+    );
+
+    const sortedData = filteredData
+        .sort((a, b) => parseFloat(b.growthRate) - parseFloat(a.growthRate))
+        .slice(0, 20);
+
+    const ctx = document.getElementById('budgetGrowthChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedData.map(item => item.unit),
+            datasets: [{
+                label: '預算增長率 (%)',
+                data: sortedData.map(item => parseFloat(item.growthRate)),
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: {
+                title: {
+                    display: true,
+                    text: '機關預算增長率比較 (前20名，不含極端值)'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const item = sortedData[context.dataIndex];
+                            return `增長率: ${item.growthRate}%, 今年預算: ${item.thisYear.toLocaleString()}${isThousandUnit ? '千元' : '元'}, 去年預算: ${item.lastYear.toLocaleString()}${isThousandUnit ? '千元' : '元'}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '預算增長率 (%)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: '機關名稱'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 創建餅圖
+function createPieCharts(data) {
+    const mainUnits = data.filter(item => item.unit.includes('主管'));
+
+    createPieChart('thisYearPieChart', '今年度主管機關預算分佈', mainUnits.map(item => item.thisYear), mainUnits.map(item => item.unit));
+    createPieChart('lastYearPieChart', '去年度主管機關預算分佈', mainUnits.map(item => item.lastYear), mainUnits.map(item => item.unit));
+}
+
+function createPieChart(canvasId, title, data, labels) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    const total = data.reduce((sum, value) => sum + value, 0);
+    
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)',
+                    'rgba(255, 159, 64, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: title,
+                    font: {
+                        size: 22
+                    }
+                },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value.toLocaleString()}${isThousandUnit ? '千元' : '元'} (${percentage}%)`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    textAlign: 'center',
+                    font: {
+                        weight: 'bold',
+                        size: 22
+                    },
+                    formatter: (value, ctx) => {
+                        const dataset = ctx.chart.data.datasets[0];
+                        const total = dataset.data.reduce((acc, data) => acc + data, 0);
+                        const percentage = ((value / total) * 100).toFixed(1) + '%';
+                        return `${ctx.chart.data.labels[ctx.dataIndex]}\n${value.toLocaleString()}${isThousandUnit ? '千元' : '元'}\n${percentage}`;
+                    },
+                    anchor: 'center',
+                    align: 'center',
+                    offset: 0,
+                    display: function(context) {
+                        const dataset = context.dataset;
+                        const count = dataset.data.length;
+                        const value = dataset.data[context.dataIndex];
+                        return value / total > 0.05; // 只顯示佔比大於 5% 的標籤
+                    }
+                }
+            },
+            layout: {
+                padding: 20
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+// 排序表格
+function sortTable(column) {
+    // 提取總和列，並將其從資料中移除
+    const totalRow = globalData[0]; // 總和列
+    const restOfData = globalData.slice(1); // 其餘資料
+
+    // 對剩餘的資料進行排序
+    restOfData.sort((a, b) => {
+        if (column === 'unit') {
+            return a[column].localeCompare(b[column]);
+        } else {
+            return b[column] - a[column];
+        }
+    });
+
+    // 將總和列重新插入到排序後的資料前面
+    globalData = [totalRow, ...restOfData];
+
+    // 重新顯示排序後的資料
+    displayBudgetComparison(globalData);
+}
+
+// 導出為 CSV
+function exportToCSV() {
+    const data = globalData.length > 0 ? globalData : JSON.parse(localStorage.getItem('budget_comparison')) || [];
+    let csvContent = "單位,今年預算,去年法定預算,預算增幅(%),極端值\n";
+
+    data.forEach(item => {
+        csvContent += `${item.unit},${item.thisYear},${item.lastYear},${item.growthRate},${item.isExtreme ? '是' : '否'}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "budget_comparison_export.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+function exportToJSON() {
+    const data = globalData.length > 0 ? globalData : JSON.parse(localStorage.getItem('budget_comparison')) || [];
+    const jsonData = JSON.stringify(data, null, 4); // 格式化 JSON
+    
+    const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "budget_comparison_export.json");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+
+// 初始化
+document.getElementById('fileUpload').addEventListener('change', handleFileUpload);
+document.getElementById('toggleUnit').addEventListener('click', toggleUnit);
+
+window.onload = function() {
+    try {
+        const storedData = localStorage.getItem('budget_comparison');
+        if (storedData) {
+            globalData = JSON.parse(storedData);
+            if (globalData.length > 0) {
+                displayBudgetComparison(globalData);
+                createBudgetGrowthChart(globalData);
+                createPieCharts(globalData);
+            } else {
+                throw new Error('Stored data is empty');
+            }
+        } else if (typeof preloadedData !== 'undefined' && preloadedData.length > 0) {
+            // 使用預載入的 JSON 資料
+            globalData = preloadedData;
+            displayBudgetComparison(globalData);
+            createBudgetGrowthChart(globalData);
+            createPieCharts(globalData);
+        } else {
+            throw new Error('No stored data found and no preloaded data available');
+        }
+    } catch (error) {
+        console.error('Error loading stored data or preloaded data:', error);
+        document.getElementById('message').textContent = '沒有找到存儲的數據。請上傳一個 Excel 文件。';
+    }
+};
+ </script>
+</body>
+</html>

@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健保署預算宣導經費視覺化</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="json/KBO.js"></script>
+    <style>
+        /* 保持原有的 CSS 樣式不變 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1,
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .chart-container {
+            background-color: white;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        button,
+        select {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        button:hover,
+        select:hover {
+            background-color: #2980b9;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        #searchInput {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            width: 300px;
+        }
+
+        .search-container button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            border: 1px solid #3498db;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-container button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>健保署預算宣導經費視覺化</h1>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="搜尋關鍵字...">
+        <button onclick="searchTable()">搜尋</button>
+    </div>
+
+    <select id="yearSelect" onchange="changeYear()">
+        <option value="all">總覽</option>
+    </select>
+
+    <button onclick="generatePDF()">下載PDF報告</button>
+
+    <h2>預算數據表</h2>
+    <div style="overflow-x: auto;">
+        <table id="budgetTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">機關名稱</th>
+                    <th>宣導項目、標題及內容</th>
+                    <th>標案/契約名稱</th>
+                    <th>媒體類型</th>
+                    <th>宣導期程</th>
+                    <th>執行單位</th>
+                    <th>預算來源</th>
+                    <th>預算科目</th>
+                    <th onclick="sortTable(8)">執行金額</th>
+                    <th>受委託廠商名稱</th>
+                    <th>預期效益</th>
+                    <th>刊登或託播對象</th>
+                    <th>備註</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 數據將通過JavaScript動態填充 -->
+            </tbody>
+        </table>
+    </div>
+
+    <h2>執行金額分佈</h2>
+    <button onclick="toggleChartType('executionAmount')">切換圖表類型</button>
+    <div class="chart-container">
+        <canvas id="executionAmountChart"></canvas>
+    </div>
+
+    <h2>媒體類型分佈</h2>
+    <button onclick="toggleChartType('mediaType')">切換圖表類型</button>
+    <div class="chart-container">
+        <canvas id="mediaTypeChart"></canvas>
+    </div>
+
+    <h2>刊登或託播對象分佈</h2>
+    <button onclick="toggleChartType('publishTarget')">切換圖表類型</button>
+    <div class="chart-container">
+        <canvas id="publishTargetChart"></canvas>
+    </div>
+
+    <script>
+        let completeData = [];
+        let charts = {};
+        let currentYear = 'all';
+
+        // 處理嵌套的 budgetData 結構
+        let processedBudgetData = [];
+
+        if (Array.isArray(budgetData) && budgetData.length > 0 && Array.isArray(budgetData[0])) {
+            processedBudgetData = budgetData[0];
+        } else if (Array.isArray(budgetData)) {
+            processedBudgetData = budgetData;
+        } else {
+            console.error('無效的 budgetData 格式');
+        }
+
+        console.log('處理後的 budgetData:', processedBudgetData);
+        console.log('處理後的 budgetData 的第一個元素:', processedBudgetData[0]);
+
+        // 更新 isDataComplete 函數以適應新的數據結構
+        function isDataComplete(item) {
+            if (typeof item !== 'object' || item === null) {
+                console.log('無效的數據項目:', item);
+                return false;
+            }
+
+            const requiredFields = [
+                '刊登或託播對象', '受委託廠商名稱', '執行單位', '執行金額',
+                '媒體類型', '宣導期程', '宣導項目、標題及內容', '年份',
+                '標案/契約名稱', '機關名稱', '預期效益', '預算來源', '預算科目'
+            ];
+
+            const missingFields = requiredFields.filter(field => {
+                if (!(field in item)) {
+                    console.log(`欄位 "${field}" 不存在於項目中`);
+                    return true;
+                }
+                if (field === '預算來源' || field === '預算科目') {
+                    return item[field] === undefined || (item[field] !== '-' && item[field].trim() === '');
+                }
+                return item[field] === undefined || item[field].toString().trim() === '';
+            });
+
+            if (missingFields.length > 0) {
+                console.log('不完整的項目:', item);
+                console.log('缺失的欄位:', missingFields);
+            }
+            return missingFields.length === 0;
+        }
+
+        // 計算總額
+        function calculateTotal(data) {
+            return data.reduce((total, item) => total + parseFloat(item['執行金額'] || 0), 0);
+        }
+
+        function searchTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('budgetTable');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                let found = false;
+                const cells = rows[i].getElementsByTagName('td');
+                for (let j = 0; j < cells.length; j++) {
+                    const cell = cells[j];
+                    if (cell) {
+                        const textValue = cell.textContent || cell.innerText;
+                        if (textValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                rows[i].style.display = found ? '' : 'none';
+            }
+        }
+
+        // 填充表格
+        function populateTable() {
+            const tableBody = document.querySelector('#budgetTable tbody');
+            tableBody.innerHTML = '';  // 清空表格
+
+            const totalAmount = calculateTotal(completeData);
+
+            // 添加總額行
+            const totalRow = tableBody.insertRow(0);
+            totalRow.insertCell(0).textContent = '總計';
+            for (let i = 1; i < 8; i++) {
+                totalRow.insertCell(i).textContent = '';
+            }
+            totalRow.insertCell(8).textContent = totalAmount.toLocaleString();
+            for (let i = 9; i < 13; i++) {
+                totalRow.insertCell(i).textContent = '';
+            }
+            totalRow.style.fontWeight = 'bold';
+
+            completeData.forEach(item => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = item['機關名稱'];
+                row.insertCell(1).textContent = item['宣導項目、標題及內容'];
+                row.insertCell(2).textContent = item['標案/契約名稱'];
+                row.insertCell(3).textContent = item['媒體類型'];
+                row.insertCell(4).textContent = item['宣導期程'];
+                row.insertCell(5).textContent = item['執行單位'];
+                row.insertCell(6).textContent = item['預算來源'];
+                row.insertCell(7).textContent = item['預算科目'];
+                row.insertCell(8).textContent = parseFloat(item['執行金額'] || 0).toLocaleString();
+                row.insertCell(9).textContent = item['受委託廠商名稱'];
+                row.insertCell(10).textContent = item['預期效益'];
+                row.insertCell(11).textContent = item['刊登或託播對象'];
+                row.insertCell(12).textContent = item['備註'] || '';
+            });
+        }
+
+        // 排序表格
+        function sortTable(n) {
+            const table = document.getElementById("budgetTable");
+            const rows = Array.from(table.rows).slice(1);  // 跳過表頭
+            const direction = table.rows[0].cells[n].classList.contains("asc") ? -1 : 1;
+
+            rows.sort((a, b) => {
+                const x = a.cells[n].textContent.trim();
+                const y = b.cells[n].textContent.trim();
+                return isNaN(x.replace(/,/g, '')) ? x.localeCompare(y) * direction : (parseFloat(x.replace(/,/g, '')) - parseFloat(y.replace(/,/g, ''))) * direction;
+            });
+
+            rows.forEach(row => table.tBodies[0].appendChild(row));
+
+            table.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
+            table.rows[0].cells[n].classList.toggle("asc", direction > 0);
+            table.rows[0].cells[n].classList.toggle("desc", direction < 0);
+        }
+
+        // 切換圖表類型
+        function toggleChartType(chartId) {
+            const currentType = charts[chartId + 'Chart'].config.type;
+            const newType = currentType === 'pie' ? 'bar' : 'pie';
+
+            switch (chartId) {
+                case 'executionAmount':
+                    createExecutionAmountChart(completeData, newType);
+                    break;
+                case 'mediaType':
+                    createMediaTypeChart(completeData, newType);
+                    break;
+                case 'publishTarget':
+                    createPublishTargetChart(completeData, newType);
+                    break;
+            }
+        }
+
+        // 創建圖表
+        function createChart(id, type, data, options) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (charts[id]) {
+                charts[id].destroy();
+            }
+
+            charts[id] = new Chart(ctx, {
+                type: type,
+                data: data,
+                options: options,
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        // 創建執行金額圖表
+        function createExecutionAmountChart(data, type = 'pie') {
+            if (!Array.isArray(data) || data.length === 0) {
+                console.error('Invalid or empty data provided to createExecutionAmountChart');
+                return;
+            }
+
+            const executionAmounts = {};
+            data.forEach(item => {
+                const agency = item['機關名稱'];
+                const amount = parseFloat(item['執行金額']) || 0;
+                executionAmounts[agency] = (executionAmounts[agency] || 0) + amount;
+            });
+
+            let sortedData = Object.entries(executionAmounts);
+
+            if (type === 'bar') {
+                // 按照數量降序排序
+                sortedData.sort((a, b) => b[1] - a[1]);
+            }
+
+            const total = sortedData.reduce((sum, [_, value]) => sum + value, 0) || 0;
+
+            if (sortedData.length === 0 || total === 0) {
+                console.error('No data available to create the execution amount chart.');
+                return;
+            }
+
+            const chartData = {
+                labels: sortedData.map(([key, _]) => key),
+                datasets: [{
+                    label: '執行金額',
+                    data: sortedData.map(([_, value]) => value),
+                    backgroundColor: [
+                        '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff',
+                        '#ff9f40', '#ffcd56', '#4bc0c0', '#36a2eb', '#ff6384'
+                    ]
+                }]
+            };
+
+            const options = {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '各機關執行金額'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: {
+                            weight: 'bold'
+                        },
+                        formatter: (value, ctx) => {
+                            const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0) || 0;
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                            if (ctx.chart.config.type === 'pie' && percentage > 5) {
+                                const label = ctx.chart.data.labels[ctx.dataIndex];
+                                return `${label}\n${value.toLocaleString()}\n(${percentage}%)`;
+                            }
+                            return percentage > 3 ? `${percentage}%` : '';
+                        }
+                    }
+                }
+            };
+
+            if (type === 'bar') {
+                options.indexAxis = 'y';
+                options.scales = {
+                    x: {
+                        beginAtZero: true
+                    }
+                };
+            }
+
+            createChart('executionAmountChart', type, chartData, options);
+        }
+
+        // 創建媒體類型圖表
+        function createMediaTypeChart(data, type = 'pie') {
+            if (!Array.isArray(data) || data.length === 0) {
+                console.error('Invalid or empty data provided to createMediaTypeChart');
+                return;
+            }
+
+            const mediaTypes = {};
+            data.forEach(item => {
+                const mediaType = item['媒體類型'];
+                const amount = parseFloat(item['執行金額']) || 0;
+                if (!mediaTypes[mediaType]) {
+                    mediaTypes[mediaType] = { total: 0, count: 0 };
+                }
+                mediaTypes[mediaType].total += amount;
+                mediaTypes[mediaType].count++;
+            });
+
+            let sortedData = Object.entries(mediaTypes);
+
+            if (type === 'bar') {
+                // 按照數量降序排序
+                sortedData.sort((a, b) => b[1].count - a[1].count);
+            } else {
+                // 如果是餅圖，按總金額降序排序
+                sortedData.sort((a, b) => b[1].total - a[1].total);
+            }
+
+            const total = sortedData.reduce((sum, [_, value]) => sum + value.total, 0) || 0;
+
+            if (sortedData.length === 0 || total === 0) {
+                console.error('No data available to create the media type chart.');
+                return;
+            }
+
+            const chartData = {
+                labels: sortedData.map(([key, _]) => key),
+                datasets: [{
+                    label: '執行金額',
+                    data: sortedData.map(([_, value]) => value.total),
+                    backgroundColor: [
+                        '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff',
+                        '#ff9f40', '#ffcd56', '#4bc0c0', '#36a2eb', '#ff6384'
+                    ]
+                }]
+            };
+
+            const options = {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '媒體類型預算分布'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const count = mediaTypes[label].count;
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                return `${label}: ${value.toLocaleString()} (${percentage}%, 數量: ${count})`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: {
+                            weight: 'bold'
+                        },
+                        formatter: (value, ctx) => {
+                            const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0) || 0;
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                            if (ctx.chart.config.type === 'pie' && percentage > 5) {
+                                const label = ctx.chart.data.labels[ctx.dataIndex];
+                                const count = mediaTypes[label].count;
+                                return `${label}\n${value.toLocaleString()}\n(${percentage}%)\n數量: ${count}`;
+                            }
+                            return percentage > 3 ? `${percentage}%` : '';
+                        }
+                    }
+                }
+            };
+
+            if (type === 'bar') {
+                options.indexAxis = 'y';
+                options.scales = {
+                    x: {
+                        beginAtZero: true
+                    }
+                };
+            }
+
+            createChart('mediaTypeChart', type, chartData, options);
+        }
+
+        function groupPublishTargets(target) {
+    const socialMedia = [
+        "一般民眾",
+        "Line",
+        "遠見FB粉絲團/遠見官網/遠見每日報APP",
+        "本署Line",
+        "衛生福利部官方臉書",
+        "東森新聞粉絲頁",
+        "部落客-張捷",
+        "喪屍老爸",
+        "豬豬隊友Scott",
+        "Wendy",
+        "插畫家-香菇愛畫畫",
+        "蠢蛋蒂蒂didi",
+        "柴語錄",
+        "一般民眾/Facebook/",
+        "youtube/第四台",
+        "泛科知識股份有限公司Youtube/Facebook平台",
+        "泛科知識股份有限公司Youtube/Facebook/網頁平台",
+        "國民健康署臉書粉絲專業",
+        "粉絲團及YOUTUBE",
+        "長者量六力LINE好友民眾",
+        "國民健康署「食在好健康」臉書粉絲團",
+        "Linetoday新聞",
+        "本署臉書粉絲團及line@社群",
+        "「李婉萍養養師」Youtube",
+        "FACEBOOK",
+        "IG",
+        "Dcard"
+    ];
+
+    const internetMedia = [
+        "新媒體",
+        "自設網站",
+        "厝邊生活組合網及BEST好事聯播網",
+        "保護服務司官網/保護服務司YOUTUBE頻道/相關入口網站banner",
+        "網路",
+        "Google",
+        "小腦萎縮症協會網站",
+        "9家媒體拍攝，並於網路",
+        "台灣女人連線官網及臉書平台",
+        "Yahoo",
+        "後續網路平台",
+        "東身新聞/財經官網",
+        "OTT追劇平台影音聯播網",
+        "聯合新聞網UDN",
+        "公視新聞網等。Yahoo主題專區",
+        "Nownews等五大新聞網banner",
+        "中華新聞雲等媒體露出。",
+        "中廣新聞網",
+        "Yahoo新聞等",
+        "中時新聞網",
+        "Yahoo新聞",
+        "中華新聞雲",
+        "中時電子報",
+        "CNA",
+        "Heho健康",
+        "Yahoo奇摩新聞",
+        "MSN",
+        "鏡新聞",
+        "公視新聞網",
+        "Yahoo新聞等"
+    ];
+
+    const traditionalMedia = [
+        "三立新聞台",
+        "TVBS-N",
+        "TVBSG精選配套組合",
+        "TVBS精彩台配套組合",
+        "全台手搖飲聯播電視",
+        "八大",
+        "非凡",
+        "TVBS新聞",
+        "民視新聞",
+        "公視台語台新聞",
+        "TVBS",
+        "三立電視",
+        "民視新聞台",
+        "民視台灣台",
+        "東森電視",
+        "東森新聞",
+        "八大電視",
+        "衛視中文台",
+        "衛視電影/西片",
+        "緯來電視",
+        "緯來日本",
+        "緯來育樂",
+        "緯來戲劇台",
+        "TVBS精彩台",
+        "TVBS-Asia",
+        "三立台灣台",
+        "大愛電視台",
+        "公視台",
+        "中天綜合",
+        "中天新聞台",
+        "八大戲劇",
+        "東森戲劇",
+        "中華日報",
+        "中天娛樂",
+        "緯來",
+        "全家便利商店電視",
+        "民視家族",
+        "三立家族",
+        "TVBS家族",
+        "東森家族",
+        "託播媒體：華視",
+        "電視媒體露出至少15則",
+        "有線電視等",
+        "大愛新聞台；中國時報",
+        "中天新聞",
+        "三立新聞",
+        "東森新聞台"
+    ];
+
+    const radioStations = [
+        "警廣電臺花蓮分台",
+        "警廣電台花蓮分台",
+        "亞太電台",
+        "基隆廣播/成功廣播/蘭陽廣播電台",
+        "嘉雲廣播電台",
+        "寶島新聲電台",
+        "心動電台",
+        "中部調頻電台",
+        "雲嘉廣播電台等10家廣播電台",
+        "高雄港都電台",
+        "台北好事電台",
+        "台中山海屯電台",
+        "花蓮連花電台",
+        "後續電台託播使用",
+        "都會計程車運將聯播網",
+        "中廣流行網",
+        "中廣新聞網"
+    ];
+
+    const eCommerce = [
+        "家樂福",
+        "PChome",
+        "Yahoo購物",
+        "SuperBuy市集",
+        "7-11/Ichannel",
+        "樂樂小黃車",
+        "大千",
+        "Jack'd"
+    ];
+
+    const newspapers = [
+        "康健雜誌",
+        "遠見FB粉絲團/遠見官網/遠見每日報APP",
+        "遠見雜誌",
+        "張老師月刊",
+        "「工商會務」雙月刊",
+        "臺灣時報全國版",
+        "臺灣醫誌",
+        "Daily青年日報",
+        "中時電子報",
+        "中時",
+        "醒報",
+        "中時新聞網",
+        "台灣時報",
+        "中國時報新春特刊",
+        "中國時報",
+        "長春月刊",
+        "新生報",
+        "更生日報",
+        "聯合新聞網UDN",
+        "壹蘋果",
+        "聯合報-宜花地方版",
+        "聯合報雲嘉地方版",
+        "自由時報農民曆",
+        "台灣新生報",
+        "壹電視",
+        "中時新聞網",
+        "Yahoo新聞",
+        "大愛新聞台；中國時報"
+    ];
+
+    const generalPlatforms = [
+        "新竹站前商圈",
+        "台中大甲鎮瀾宮商圈",
+        "南投竹山紫南宮商圈",
+        "台南站前商圈",
+        "高雄捷運公司",
+        "大台北長青樂活聯盟",
+        "銀髮族聯盟",
+        "婆婆媽媽哈拉聯盟",
+        "廟宇電視牆",
+        "臺鐵區間車車廂",
+        "熟齡民眾族群",
+        "及高齡相關領域之產業。",
+        "本署記者會辦理",
+        "Youth",
+        "張貼於販售菸品場所及印製於菸品容器上",
+        "活動企劃",
+        "幸福",
+        "港都",
+        "人人",
+        "台南知音",
+        "蓮花",
+        "民眾",
+        "平面",
+        "Barker",
+        "獨家報導",
+        "WATCH",
+        "LAP"
+    ];
+
+    if (socialMedia.includes(target)) return '社交媒體平台';
+    if (internetMedia.includes(target)) return '網路媒體';
+    if (traditionalMedia.includes(target)) return '傳統媒體';
+    if (radioStations.includes(target)) return '廣播電台';
+    if (eCommerce.includes(target)) return '電子商務與流量平台';
+    if (newspapers.includes(target)) return '傳統報紙與雜誌';
+    if (generalPlatforms.includes(target)) return '綜合平台';
+
+    // 新增的邏輯，處理未分類的目標
+    if (target.includes('臉書') || target.includes('FB') || target.includes('粉絲') || 
+        target.toLowerCase().includes('facebook') || target.toLowerCase().includes('instagram') || 
+        target.toLowerCase().includes('youtube')) {
+        return '社交媒體平台';
+    }
+    
+    if (target.includes('網') || target.includes('網站') || target.includes('平台') || 
+        target.toLowerCase().includes('online') || target.toLowerCase().includes('website')) {
+        return '網路媒體';
+    }
+    
+    if (target.includes('電視') || target.includes('台') || target.includes('頻道')) {
+        return '傳統媒體';
+    }
+    
+    if (target.includes('電台') || target.includes('廣播')) {
+        return '廣播電台';
+    }
+    
+    if (target.includes('商店') || target.includes('購物') || target.toLowerCase().includes('shop')) {
+        return '電子商務與流量平台';
+    }
+    
+    if (target.includes('報') || target.includes('刊') || target.includes('雜誌')) {
+        return '傳統報紙與雜誌';
+    }
+    
+    if (target.includes('民眾') || target.includes('族群') || target.includes('聯盟') || 
+        target.includes('商圈') || target.includes('活動')) {
+        return '綜合平台';
+    }
+
+    // 如果仍然無法分類，則根據目標的特徵進行最後的判斷
+    if (target.length <= 3 || /^[a-zA-Z]+$/.test(target)) {
+        return '社交媒體平台';  // 假設短名稱或純英文名稱更可能是社交媒體平台
+    }
+
+    return '綜合平台';  // 如果實在無法確定，歸類為綜合平台
+}
+
+        // 創建刊登或託播對象圖表
+        function createPublishTargetChart(data, type = 'pie') {
+    if (!Array.isArray(data) || data.length === 0) {
+        console.error('Invalid or empty data provided to createPublishTargetChart');
+        return;
+    }
+
+    const publishTargetData = {};
+    const otherTargets = new Set(); // 用於儲存"其他"類別的託播對象
+
+    data.forEach(item => {
+        const targets = splitPublishTargets(item['刊登或託播對象']);
+        const amount = parseFloat(item['執行金額']) || 0;
+        const validTargets = targets.filter(target => target !== '');
+
+        if (validTargets.length === 0) return;
+
+        const amountPerTarget = amount / validTargets.length;
+
+        validTargets.forEach(target => {
+            target = normalizeChannelName(target);
+
+            // 使用分組邏輯進行分類
+            const group = groupPublishTargets(target);
+
+            if (group === '其他') {
+                // 如果是 "其他" 分類，加入到 Set 中去重
+                otherTargets.add(target);
+            }
+
+            if (!publishTargetData[group]) {
+                publishTargetData[group] = { total: 0, count: 0 };
+            }
+            publishTargetData[group].total += amountPerTarget;
+            publishTargetData[group].count++;
+        });
+    });
+
+    // 輸出去重後的「其他」類別的託播對象
+    console.log('去重後的「其他」託播對象:', Array.from(otherTargets));
+
+    let sortedData = Object.entries(publishTargetData);
+
+    if (type === 'bar') {
+        // 按照數量降序排序
+        sortedData.sort((a, b) => b[1].count - a[1].count);
+    } else {
+        // 如果是餅圖，按總金額降序排序
+        sortedData.sort((a, b) => b[1].total - a[1].total);
+    }
+
+    const total = sortedData.reduce((sum, [_, value]) => sum + value.total, 0) || 0;
+
+    if (sortedData.length === 0 || total === 0) {
+        console.error('No data available to create the publish target chart.');
+        return;
+    }
+
+    const chartData = {
+        labels: sortedData.map(([key, _]) => key),
+        datasets: [{
+            label: '執行金額',
+            data: sortedData.map(([_, value]) => value.total),
+            backgroundColor: [
+                '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff',
+                '#ff9f40', '#ffcd56', '#4bc0c0', '#36a2eb', '#ff6384'
+            ]
+        }]
+    };
+
+    const options = {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: '刊登或託播對象分布'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        const label = context.label || '';
+                        const value = context.raw;
+                        const count = publishTargetData[label].count;
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                        return `${label}: ${value.toLocaleString()} (${percentage}%, 數量: ${count})`;
+                    }
+                }
+            },
+            datalabels: {
+                color: '#fff',
+                font: {
+                    weight: 'bold'
+                },
+                formatter: (value, ctx) => {
+                    const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0) || 0;
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                    if (ctx.chart.config.type === 'pie' && percentage > 5) {
+                        const label = ctx.chart.data.labels[ctx.dataIndex];
+                        const count = publishTargetData[label].count;
+                        return `${label}\n${value.toLocaleString()}\n(${percentage}%)\n數量: ${count}`;
+                    }
+                    return percentage > 3 ? `${percentage}%` : '';
+                }
+            }
+        }
+    };
+
+    if (type === 'bar') {
+        options.indexAxis = 'y';
+        options.scales = {
+            x: {
+                beginAtZero: true
+            }
+        };
+    }
+
+    createChart('publishTargetChart', type, chartData, options);
+}
+
+        function splitPublishTargets(targetString) {
+            return targetString.split(/[,、;]\s*|\s+(?:及|和|與)\s+|\s+/)
+                .map(item => item.trim())
+                .filter(item => item !== '');
+        }
+
+        function normalizeChannelName(name) {
+            const channelPrefixes = ['新媒體', 'FB', 'Google', '臉書', '谷歌'];
+            for (let prefix of channelPrefixes) {
+                if (name.startsWith(prefix)) {
+                    return prefix;
+                }
+            }
+            return name;
+        }
+
+        // 初始化年份下拉選單
+        function initializeYearSelect() {
+            const yearSelect = document.getElementById('yearSelect');
+            const years = [...new Set(processedBudgetData.map(item => item['年份']))].sort();
+
+            yearSelect.innerHTML = '<option value="all">總覽</option>';
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            });
+        }
+
+        // 改變年份篩選
+        function changeYear() {
+            const selectedYear = document.getElementById('yearSelect').value;
+            console.log('選擇的年份:', selectedYear);
+
+            console.log('原始數據數量:', processedBudgetData.length);
+            console.log('數據示例:', processedBudgetData.slice(0, 3));
+
+            let filteredData;
+            if (selectedYear === 'all') {
+                filteredData = processedBudgetData;
+            } else {
+                filteredData = processedBudgetData.filter(item => item['年份'] == selectedYear);
+            }
+            console.log('按年份過濾後的數據數量:', filteredData.length);
+
+            completeData = filteredData.filter(isDataComplete);
+
+            console.log('完整數據數量:', completeData.length);
+            console.log('被過濾掉的數據數量:', filteredData.length - completeData.length);
+
+            if (completeData.length === 0) {
+                console.log('警告: 沒有完整的數據項目');
+                alert('沒有找到符合條件的完整數據項目。請檢查數據格式或選擇其他年份。');
+                return; // 防止繼續執行後續的圖表創建
+            } else {
+                console.log('完整數據示例:', completeData.slice(0, 3));
+            }
+
+            try {
+                populateTable();
+                createExecutionAmountChart(completeData);
+                createMediaTypeChart(completeData);
+                createPublishTargetChart(completeData);
+            } catch (error) {
+                console.error('創建圖表時發生錯誤:', error);
+                alert('創建圖表時發生錯誤，請檢查控制台以獲取更多信息。');
+            }
+        }
+
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // 添加標題
+            doc.setFontSize(20);
+            doc.text("健保署預算宣導經費報告", 20, 20);
+
+            let yOffset = 40;
+
+            // 添加各年份的分析
+            const years = [...new Set(processedBudgetData.map(item => item['年份']))].sort();
+            for (const year of years) {
+                const yearData = processedBudgetData.filter(item => item['年份'] === year);
+                const totalAmount = calculateTotal(yearData);
+
+                doc.setFontSize(16);
+                doc.text(`${year}年度分析`, 20, yOffset);
+                yOffset += 10;
+
+                doc.setFontSize(12);
+                doc.text(`總執行金額: ${totalAmount.toLocaleString()} 元`, 20, yOffset);
+                yOffset += 20;
+
+                // 添加該年度的圖表
+                await addChartToPDF(doc, 'executionAmountChart', yOffset);
+                yOffset += 100;
+
+                if (yOffset > 250) {
+                    doc.addPage();
+                    yOffset = 20;
+                }
+            }
+
+            // 添加總覽圖表
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.text("總覽", 20, 20);
+            await addChartToPDF(doc, 'executionAmountChart', 40);
+            await addChartToPDF(doc, 'mediaTypeChart', 140);
+
+            doc.addPage();
+            await addChartToPDF(doc, 'publishTargetChart', 20);
+
+            doc.save("budget_report.pdf");
+        }
+
+        async function addChartToPDF(doc, chartId, yOffset) {
+            const canvas = document.getElementById(chartId);
+            const imgData = canvas.toDataURL("image/png");
+            doc.addImage(imgData, 'PNG', 10, yOffset, 190, 90);
+        }
+
+        // 初始化頁面
+        window.onload = function () {
+            console.log('原始 budgetData:', budgetData);
+            console.log('budgetData 類型:', typeof budgetData);
+            if (typeof budgetData === 'object' && budgetData !== null) {
+                console.log('budgetData 的鍵:', Object.keys(budgetData));
+            }
+            initializeYearSelect();
+            document.getElementById('yearSelect').addEventListener('change', changeYear);
+            changeYear();
+        };
+    </script>
+</body>
+
+</html>
